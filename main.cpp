@@ -1,7 +1,7 @@
 #include<iostream>
 #include"interface/interface.hpp"
 
-//g++ main.cpp -fPIC interface/interface.cpp -o prog -lsfml-graphics -lsfml-window -lsfml-system
+//g++ main.cpp -fPIC interface/interface.cpp fourier/fourier.cpp -o prog -lsfml-graphics -lsfml-window -lsfml-system
 
 int main()
 {
