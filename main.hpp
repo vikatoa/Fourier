@@ -17,6 +17,10 @@ enum step{
     drawing,
     closing,
 };
+enum algorithm{
+    standard_methode,
+    cooly_turkey,
+};
 
 class Interface{
     private:
@@ -32,9 +36,11 @@ class Interface{
         int nb_circles;
         std::vector<std::pair<std::complex<float>, int>> circles;
         std::vector<sf::Vector2f> sketch;
-        int x;
+        float x;
         float periode;
         int fps;
+        algorithm algo;
+        bool show_circles;
 
     public:
         Interface();
