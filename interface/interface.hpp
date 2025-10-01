@@ -1,5 +1,5 @@
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef INTERFACE_HPP
+#define INTERFACE_HPP
 
 #include <SFML/Graphics.hpp>
 #include <vector>
