@@ -12,6 +12,7 @@ class Fourier{
         void minimal_display(sf::Image);
         void convert_image_to_WnB(unsigned int);
         void convert_image_to_contour();
+         
 
         sf::Image image;
         sf::Image image_WnB;

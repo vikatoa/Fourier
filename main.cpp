@@ -8,8 +8,11 @@ int main()
 {
    // Interface interface;
     Fourier image;
-    image.load_image("data/capture.jpg");
-    image.convert_image_to_WnB(100); 
+    image.load_image("data/capture.jpg"); 
+    image.convert_image_to_contour();
+    image.convert_image_to_WnB(90);
+    image.minimal_display(image.image);
+    image.minimal_display(image.image_contour);
     image.minimal_display(image.image_WnB);
     /*
     while(interface.isOpen()){
