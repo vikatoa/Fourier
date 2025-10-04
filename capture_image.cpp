@@ -5,7 +5,7 @@
 
 int main() {
     // Open default camera (usually /dev/video0)
-    cv::VideoCapture cap(-1);
+    cv::VideoCapture cap("v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, framerate=30/1 ! videoconvert ! appsink", cv::CAP_GSTREAMER);
 
     if (!cap.isOpened()) {
         std::cerr << "Error: Could not open camera." << std::endl;

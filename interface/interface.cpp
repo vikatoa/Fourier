@@ -1,16 +1,32 @@
 #include "interface.hpp"
 // g++ main.cpp -fPIC interface/interface.cpp -o prog -lsfml-graphics -lsfml-window -lsfml-system
 
-const int nb_intermediate_point = 1;
-
 bool compareComplex(std::pair<std::complex<float>, int> i, std::pair<std::complex<float>, int> j){
-    return std::abs(i.second) < std::abs(j.second);
+    return std::abs(i.second + 0.1) < std::abs(j.second + 0.1);
+}
+
+bool in(std::list<sf::Vector2f> vect_l, sf::Vector2f v){
+    for(auto vect : vect_l){
+        if(floor(vect.x) == floor(v.x) && floor(vect.y) == floor(v.y)){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool in(std::vector<sf::Vector2f> vect_l, sf::Vector2f v){
+    for(auto vect : vect_l){
+        if(floor(vect.x) == floor(v.x) && floor(vect.y) == floor(v.y)){
+            return true;
+        }
+    }
+    return false;
 }
 
 Interface::Interface(){
     this->window.create(sf::VideoMode(1920, 1080), "fourier", sf::Style::Fullscreen);
     this->fps = 60;
-    this->window.setFramerateLimit(this->fps);
+    // this->window.setFramerateLimit(this->fps);
     this->font.loadFromFile("data/UbuntuMono.ttf");
     this->text.setFont(this->font);
     this->state = caption;
@@ -19,14 +35,18 @@ Interface::Interface(){
     this->leftButton = false;
     this->nb_circles = 2;
     this->periode = 20;
-    this->x = 0;
     this->algo = standard_methode;
     this->show_circles = true;
+    this->clock.restart();
+    this->last_frame_time = 0;
+    this->max = 1000;
 }
 
 Interface::~Interface(){
     this->points.clear();
     this->circles.clear();
+    this->points_to_draw.clear();
+    this->sketch.clear();
     this->window.close();
     this->sketch.clear();
 }
@@ -34,7 +54,7 @@ Interface::~Interface(){
 void Interface::show(){
     this->window.clear(sf::Color::Black);
     if(this->state == caption){
-        for(sf::Vector2f point : this->points){
+        for(sf::Vector2f point : this->points_to_draw){
             sf::RectangleShape rec(sf::Vector2f(1, 1));
             rec.setFillColor(sf::Color(0, 255, 0));
             rec.setPosition(point.x, point.y);
@@ -43,7 +63,7 @@ void Interface::show(){
     }
 
     else if(this->state == drawing){
-        for(sf::Vector2f point : this->points){
+        for(sf::Vector2f point : this->points_to_draw){
             sf::RectangleShape rec(sf::Vector2f(1, 1));
             rec.setFillColor(sf::Color(255, 255, 255));
             rec.setPosition(point.x, point.y);
@@ -51,7 +71,7 @@ void Interface::show(){
         }
 
         sf::Vector2f pos(-1920/2, -1080/2);
-        float avancement = this->x  * 2. * M_PI / this->fps / this->periode;
+        float avancement = this->clock.getElapsedTime().asSeconds() * 2. * M_PI / this->periode;
         for(auto circle : this->circles){
             float r = std::abs(circle.first);
             float n = circle.second;
@@ -73,17 +93,15 @@ void Interface::show(){
 
             pos = sf::Vector2f(pos.x + r * std::cos(std::arg(circle.first) + n * avancement - M_PI_2), pos.y + r * std::sin(std::arg(circle.first) + n * avancement - M_PI_2));
         }
-
-        this->sketch.push_back(-pos);
+        float g = 255;
 
         for(sf::Vector2f point : this->sketch){
             sf::RectangleShape rec(sf::Vector2f(1, 1));
-            rec.setFillColor(sf::Color(0, 255, 0));
+            rec.setFillColor(sf::Color(0, g, 0));
             rec.setPosition(point.x, point.y);
+            g -= 255./this->max;
             window.draw(rec);
         }
-
-        this->x += 1.01;
     }
 
     // Show information with text
@@ -96,6 +114,8 @@ void Interface::show(){
     txt.append("\t nb cercle : ");
     txt.append(this->algo == standard_methode ? std::to_string(this->nb_circles * 2 + 1) : std::to_string((unsigned long long int) pow(2, this->nb_circles)));
     txt.append("\t"); txt.append(this->algo == standard_methode ? "methode standard" : "Cooley-Turkey FFT");
+    txt.append("\t points : ");
+    txt.append(std::to_string(this->sketch.size()));
     this->text.setString(txt);
     this->text.setCharacterSize(24);
     this->window.draw(this->text);
@@ -107,6 +127,7 @@ void Interface::show(){
 
 
     this->window.display();
+    this->last_frame_time = clock.getElapsedTime().asSeconds();
 }
 
 void Interface::events(){
@@ -125,12 +146,10 @@ void Interface::events(){
         }
         if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
             this->periode += 1;
-            this->x = 0;
             this->sketch.clear();
         }
         if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
             this->periode -= 1;
-            this->x = 0;
             this->sketch.clear();
         }
         if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
@@ -138,21 +157,18 @@ void Interface::events(){
             this->state = computing;
             this->circles.clear();
             this->sketch.clear();
-            this->x = 0;
         }
         if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
             this->nb_circles++;
             this->state = computing;
             this->circles.clear();
             this->sketch.clear();
-            this->x = 0;
         }
         if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
             this->algo = this->algo == standard_methode ? cooly_turkey : standard_methode;
             if(this->state == drawing) this->state = computing;
             this->circles.clear();
             this->sketch.clear();
-            this->x = 0;
         }
         if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::C)){
             this->show_circles = !this->show_circles;
@@ -163,20 +179,22 @@ void Interface::events(){
         this->leftButton = true;
         if(this->state == caption){
             sf::Vector2f mousePos = this->window.mapPixelToCoords(sf::Mouse::getPosition(this->window));
-            if(!this->points.empty()){
-                sf::Vector2f previousMousePose = this->points.back();
-                for(int i = 1; i < nb_intermediate_point ; i++){
-                    this->points.push_back(
-                        sf::Vector2f((mousePos.x * i + previousMousePose.x * (nb_intermediate_point - i))/nb_intermediate_point, (mousePos.y * i + previousMousePose.y * (nb_intermediate_point - i))/nb_intermediate_point)
-                    );
-                }
-            }
             this->points.push_back(mousePos);
+            if(!in(this->points_to_draw, mousePos)){
+                this->points_to_draw.push_back(mousePos);
+            }
         }
     }
-    if(! sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
+    if(!sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
         this->leftButton = false;
     }
+}
+
+bool Interface::timeToFrame(){
+    if(this->clock.getElapsedTime().asSeconds() - this->last_frame_time >= 1./60){
+        return true;
+    }
+    return false;
 }
 
 void Interface::update(){
@@ -202,6 +220,22 @@ void Interface::update(){
         }
         else if(this->algo == cooly_turkey){
 
+        }
+    }
+    if(this->state == drawing){
+        sf::Vector2f pos(-1920/2, -1080/2);
+        float avancement = this->clock.getElapsedTime().asSeconds() * 2. * M_PI / this->periode;
+        for(auto circle : this->circles){
+            float r = std::abs(circle.first);
+            float n = circle.second;
+
+            pos = sf::Vector2f(pos.x + r * std::cos(std::arg(circle.first) + n * avancement - M_PI_2), pos.y + r * std::sin(std::arg(circle.first) + n * avancement - M_PI_2));
+        }
+        if(!in(sketch, -pos)){
+            this->sketch.push_front(-pos);
+        }
+        if(sketch.size() > this->max){
+            sketch.pop_back();
         }
     }
 }
