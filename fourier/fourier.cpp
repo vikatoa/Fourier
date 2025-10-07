@@ -111,14 +111,14 @@ std::vector<sf::Vector2f> toPoints(sf::Image img){
     std::queue<sf::Vector2i> todoBlack;
     todo.push(sf::Vector2i(x, y));
     while(!todo.empty() || !todoBlack.empty()){
+        std::vector<sf::Vector2f> connex;
         while(! todo.empty()){
             sf::Vector2i temp = todo.front();
             x = temp.x;
             y = temp.y;
             todo.pop();
-            // std::cout << x << ", " << y << std::endl;
             if(x < 0 || x >= img.getSize().x || y < 0 || y >= img.getSize().y){
-                // std::cout << x << ", " << y << std::endl;
+                std::cout << x << ", " << y << std::endl;
                 continue;
             }
             if(img.getPixel(x, y).r == 0){
@@ -129,7 +129,7 @@ std::vector<sf::Vector2f> toPoints(sf::Image img){
                 continue;
             }
             
-            points.push_back(sf::Vector2f(x, y));
+            connex.push_back(sf::Vector2f(x, y));
             img.setPixel(x, y, sf::Color(1, 0, 0));
 
             if(x > 0)
@@ -141,12 +141,13 @@ std::vector<sf::Vector2f> toPoints(sf::Image img){
             if(y < img.getSize().y - 1)
                 todo.push(sf::Vector2i(x, y+1));
         }
-        while(todo.empty()){
+        if(connex.size() > 50){
+            points.insert(std::end(points), std::begin(connex), std::end(connex));
+        }
+        while(todo.empty() && !todoBlack.empty()){
             sf::Vector2i temp = todoBlack.front();
             x = temp.x;
             y = temp.y;
-            if(x == 613 && y == 470)
-                std::cout << "\t" << x << ", " << y << std::endl;
             todoBlack.pop();
             if(x < 0 || x >= img.getSize().x || y < 0 || y >= img.getSize().y){
                 std::cout << "\t" << x << ", " << y << std::endl;
@@ -156,20 +157,23 @@ std::vector<sf::Vector2f> toPoints(sf::Image img){
                 todo.push(sf::Vector2i(x, y));
                 continue;
             }
-            else if(img.getPixel(x, y).r == 1){
+            if(img.getPixel(x, y).r == 1){
                 continue;
             }
-
             img.setPixel(x, y, sf::Color(1, 0, 0));
 
-            if(x > 0)
+            if(x > 0){
                 todo.push(sf::Vector2i(x-1, y));
-            if(y > 0)
+            }
+            if(y > 0){
                 todo.push(sf::Vector2i(x, y-1));
-            if(x < img.getSize().x - 1)
+            }
+            if(x < img.getSize().x - 1){
                 todo.push(sf::Vector2i(x+1, y));
-            if(y < img.getSize().y - 1)
+            }
+            if(y < img.getSize().y - 1){
                 todo.push(sf::Vector2i(x, y+1));
+            }
         }
     }
     return points;
