@@ -33,7 +33,7 @@ Interface::Interface(){
     this->clock.restart();
     this->clock.getElapsedTime();
     this->leftButton = false;
-    this->nb_circles = 2;
+    this->nb_circles = 200;
     this->periode = 20;
     this->algo = standard_methode;
     this->show_circles = true;
@@ -238,6 +238,17 @@ void Interface::update(){
             sketch.pop_back();
         }
     }
+}
+
+void Interface::getPoints(std::vector<sf::Vector2f> ps){
+    this->points = ps;
+    this->points_to_draw.clear();
+    for(auto p : ps){
+        if(this->points_to_draw.empty() || !in(points_to_draw, p)){
+            this->points_to_draw.push_back(p);
+        }
+    }
+    this->state = computing;
 }
 
 bool Interface::isOpen(){

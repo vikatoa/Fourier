@@ -6,20 +6,14 @@
 
 int main()
 {
-   Interface interface;
-    // Fourier image;
-    // image.load_image("data/capture.jpg"); 
-    // sf::Image i1 = image.app_kernel(image.image, {{1, 1, 1}, {0, 0, 0}, {-1, -1, -1}});
-    // sf::Image i2 = image.app_kernel(image.image, {{1, 0, -1}, {1, 0, -1}, {1, 0, -1}});
-    // sf::Image i  = image.add_images(i1, i2);
-    // sf::Image w  = image.WnB(i, 60);
-    // image.minimal_display(image.image);
-    // image.minimal_display(i1);
-    // image.minimal_display(i2);
-    // image.minimal_display(i);
-    // image.minimal_display(w);
+    Interface interface;
+    sf::Image img;
+    img = load_image("data/capture.jpg"); 
+    sf::Image w  = contour(img, 50);
+    minimal_display(w);
 
-    
+
+    interface.getPoints(toPoints(w));
     while(interface.isOpen()){
         if(interface.timeToFrame()){
             interface.events();

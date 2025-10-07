@@ -51,6 +51,7 @@ class Interface{
         ~Interface();
 
         bool timeToFrame();
+        void getPoints(std::vector<sf::Vector2f> p);
         bool isOpen();
         void update();
         void draw();

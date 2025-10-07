@@ -5,7 +5,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <cmath>
 
-sf::Image Fourier::app_kernel(sf::Image img, std::vector<std::vector<float>> kernel){
+sf::Image app_kernel(sf::Image img, std::vector<std::vector<float>> kernel){
     sf::Image image;
     float max = 0;
 
@@ -47,7 +47,7 @@ sf::Image Fourier::app_kernel(sf::Image img, std::vector<std::vector<float>> ker
     return image;
 }
 
-sf::Image Fourier::add_images(sf::Image img1, sf::Image img2){
+sf::Image add_images(sf::Image img1, sf::Image img2){
     sf::Image image;
 
     if(img1.getSize() != img2.getSize()){
@@ -67,7 +67,7 @@ sf::Image Fourier::add_images(sf::Image img1, sf::Image img2){
     return image;
 }
 
-sf::Image Fourier::WnB(sf::Image img, int tresh){
+sf::Image WnB(sf::Image img, int tresh){
     sf::Image image;
 
     image.create(img.getSize().x, img.getSize().y, sf::Color(0, 0, 0));
@@ -82,7 +82,7 @@ sf::Image Fourier::WnB(sf::Image img, int tresh){
     return image;
 }
 
-sf::Image Fourier::WnB(sf::Image img){
+sf::Image WnB(sf::Image img){
     sf::Image image;
 
     image.create(img.getSize().x, img.getSize().y, sf::Color(0, 0, 0));
@@ -96,44 +96,86 @@ sf::Image Fourier::WnB(sf::Image img){
     return image;
 }
 
-bool Fourier::load_image(std::string filename){
-    return image.loadFromFile(filename); //(!texture_image.loadFromFile("data/capture.jpg")); 
+sf::Image load_image(std::string filename){
+    sf::Image img;
+    img.loadFromFile(filename);
+    return img; //(!texture_image.loadFromFile("data/capture.jpg")); 
 }
 
-void Fourier::convert_image_to_WnB(unsigned int tresh){
-    sf::Vector2<unsigned int> size = image_contour.getSize(); 
-    image_WnB.create(size.x, size.y, sf::Color(0, 0, 0)); 
-    for (auto x=0; x<size.x; x++){
-        for (auto y=0; y<size.y; y++){
-            if ((image_contour.getPixel(x, y).r + image_contour.getPixel(x, y).g + image_contour.getPixel(x, y).b) >= tresh*3){
-                image_WnB.setPixel(x, y, sf::Color(255, 255, 255));
+std::vector<sf::Vector2f> toPoints(sf::Image img){
+    std::vector<sf::Vector2f> points;
+    int x = 0;
+    int y = 0;
+
+    std::queue<sf::Vector2i> todo;
+    std::queue<sf::Vector2i> todoBlack;
+    todo.push(sf::Vector2i(x, y));
+    while(!todo.empty() || !todoBlack.empty()){
+        while(! todo.empty()){
+            sf::Vector2i temp = todo.front();
+            x = temp.x;
+            y = temp.y;
+            todo.pop();
+            // std::cout << x << ", " << y << std::endl;
+            if(x < 0 || x >= img.getSize().x || y < 0 || y >= img.getSize().y){
+                // std::cout << x << ", " << y << std::endl;
+                continue;
             }
+            if(img.getPixel(x, y).r == 0){
+                todoBlack.push(sf::Vector2i(x, y));
+                continue;
+            }
+            else if(img.getPixel(x, y).r == 1){
+                continue;
+            }
+            
+            points.push_back(sf::Vector2f(x, y));
+            img.setPixel(x, y, sf::Color(1, 0, 0));
+
+            if(x > 0)
+                todo.push(sf::Vector2i(x-1, y));
+            if(y > 0)
+                todo.push(sf::Vector2i(x, y-1));
+            if(x < img.getSize().x - 1)
+                todo.push(sf::Vector2i(x+1, y));
+            if(y < img.getSize().y - 1)
+                todo.push(sf::Vector2i(x, y+1));
+        }
+        while(todo.empty()){
+            sf::Vector2i temp = todoBlack.front();
+            x = temp.x;
+            y = temp.y;
+            if(x == 613 && y == 470)
+                std::cout << "\t" << x << ", " << y << std::endl;
+            todoBlack.pop();
+            if(x < 0 || x >= img.getSize().x || y < 0 || y >= img.getSize().y){
+                std::cout << "\t" << x << ", " << y << std::endl;
+                continue;
+            }
+            if(img.getPixel(x, y).r > 1){
+                todo.push(sf::Vector2i(x, y));
+                continue;
+            }
+            else if(img.getPixel(x, y).r == 1){
+                continue;
+            }
+
+            img.setPixel(x, y, sf::Color(1, 0, 0));
+
+            if(x > 0)
+                todo.push(sf::Vector2i(x-1, y));
+            if(y > 0)
+                todo.push(sf::Vector2i(x, y-1));
+            if(x < img.getSize().x - 1)
+                todo.push(sf::Vector2i(x+1, y));
+            if(y < img.getSize().y - 1)
+                todo.push(sf::Vector2i(x, y+1));
         }
     }
+    return points;
 }
 
-void Fourier::convert_image_to_contour(){
-    sf::Vector2<unsigned int> size = image.getSize(); 
-    image_contour.create(size.x-2, size.y-2, sf::Color(0, 0, 0)); 
-    for (auto x=1; x<size.x-1; x++){
-        for (auto y=1; y<size.y-1; y++){
-            int k_x_r = (image.getPixel(x-1, y-1).r + image.getPixel(x, y-1).r + image.getPixel(x+1, y-1).r) - (image.getPixel(x-1, y+1).r + image.getPixel(x, y+1).r + image.getPixel(x+1, y+1).r); 
-            int k_y_r = (image.getPixel(x-1, y-1).r + image.getPixel(x-1, y).r + image.getPixel(x-1, y+1).r) - (image.getPixel(x+1, y-1).r + image.getPixel(x+1, y).r + image.getPixel(x+1, y+1).r);
-            unsigned int score_r = (int)floor(std::pow(k_x_r*k_x_r+k_y_r*k_y_r, 0.5));
-            int k_x_g = (image.getPixel(x-1, y-1).g + image.getPixel(x, y-1).g + image.getPixel(x+1, y-1).g) - (image.getPixel(x-1, y+1).g + image.getPixel(x, y+1).g + image.getPixel(x+1, y+1).g); 
-            int k_y_g = (image.getPixel(x-1, y-1).g + image.getPixel(x-1, y).g + image.getPixel(x-1, y+1).g) - (image.getPixel(x+1, y-1).g + image.getPixel(x+1, y).g + image.getPixel(x+1, y+1).g);
-            unsigned int score_g = (int)floor(std::pow(k_x_g*k_x_g+k_y_g*k_y_g, 0.5));
-            int k_x_b = (image.getPixel(x-1, y-1).b + image.getPixel(x, y-1).b + image.getPixel(x+1, y-1).b) - (image.getPixel(x-1, y+1).b + image.getPixel(x, y+1).b + image.getPixel(x+1, y+1).b); 
-            int k_y_b = (image.getPixel(x-1, y-1).b + image.getPixel(x-1, y).b + image.getPixel(x-1, y+1).b) - (image.getPixel(x+1, y-1).b + image.getPixel(x+1, y).b + image.getPixel(x+1, y+1).b);
-            unsigned int score_b = (int)floor(std::pow(k_x_b*k_x_b+k_y_b*k_y_b, 0.5));
-            image_contour.setPixel(x-1, y-1, sf::Color(score_r, score_g, score_b));
-        }
-    }
-}
-
-
-
-void Fourier::minimal_display(sf::Image image){
+void minimal_display(sf::Image image){
     int x = 100;
     int y = 100;
     sf::RenderWindow window(sf::VideoMode(800, 600), "Hello Window");
@@ -156,4 +198,8 @@ void Fourier::minimal_display(sf::Image image){
 
             window.display();
     }
+}
+
+sf::Image contour(sf::Image img, int tresh){
+    return WnB(add_images(app_kernel(img, {{1, 1, 1}, {0, 0, 0}, {-1, -1, -1}}), app_kernel(img, {{1, 0, -1}, {1, 0, -1}, {1, 0, -1}})), tresh);
 }
